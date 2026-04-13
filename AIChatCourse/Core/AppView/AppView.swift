@@ -35,7 +35,7 @@ struct AppView: View {
                         TabBarView()
                     },
                     onboardingView: {
-                        WelcomeView()
+                        WelcomeView(viewModel: WelcomeViewModel(interactor: CoreInteractor(container: container)))
                     }
                 )
                 .environment(appState)

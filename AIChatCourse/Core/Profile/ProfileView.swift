@@ -29,7 +29,7 @@ struct ProfileView: View {
             }
         }
         .sheet(isPresented: $viewModel.showSettingsView) {
-            SettingsView()
+            SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
         }
         .fullScreenCover(
             isPresented: $viewModel.showCreateAvatarView,

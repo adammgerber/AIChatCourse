@@ -9,17 +9,15 @@ import SwiftUI
 
 struct WelcomeView: View {
     
-    @Environment(AppState.self) private var root
-    @Environment(LogManager.self) private var logManager
+    @Environment(AppState.self) private var appState
     @Environment(DependencyContainer.self) private var container
-
-    @State var imageName: String = Constants.randomImage
-    @State private var showSignInView: Bool = false
+    
+    @State var viewModel: WelcomeViewModel
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 8) {
-                ImageLoaderView(urlString: imageName)
+                ImageLoaderView(urlString: viewModel.imageName)
                     .ignoresSafeArea()
                 
                 titleSection
@@ -32,13 +30,15 @@ struct WelcomeView: View {
             }
         }
         .screenAppearAnalytics(name: "WelcomeView")
-        .sheet(isPresented: $showSignInView) {
+        .sheet(isPresented: $viewModel.showSignInView) {
             CreateAccountView(
                 viewModel: CreateAccountViewModel(interactor: CoreInteractor(container: container)),
                 title: "Sign in",
                 subtitle: "Connect to an existing account.",
                 onDidSignIn: { isNewUser in
-                    handleDidSignIn(isNewUser: isNewUser)
+                    viewModel.handleDidSignIn(isNewUser: isNewUser, onShowTabBarView: {
+                        appState.updateViewState(showTabBarView: true)
+                    })
                 }
             )
             .presentationDetents([.medium])
@@ -72,55 +72,9 @@ struct WelcomeView: View {
                 .padding(8)
                 .tappableBackground()
                 .onTapGesture {
-                    onSignInPresssed()
+                    viewModel.onSignInPresssed()
                 }
         }
-    }
-    
-    enum Event: LoggableEvent {
-        case didSignIn(isNewUser: Bool)
-        case signInPressed
-        
-        var eventName: String {
-            switch self {
-            case .didSignIn:          return "WelcomeView_DidSignIn"
-            case .signInPressed:      return "WelcomeView_SignIn_Pressed"
-            }
-        }
-        
-        var parameters: [String: Any]? {
-            switch self {
-            case .didSignIn(isNewUser: let isNewUser):
-                return [
-                    "is_new_user": isNewUser
-                ]
-            default:
-                return nil
-            }
-        }
-        
-        var type: LogType {
-            switch self {
-            default:
-                return .analytic
-            }
-        }
-    }
-    
-    private func handleDidSignIn(isNewUser: Bool) {
-        logManager.trackEvent(event: Event.didSignIn(isNewUser: isNewUser))
-        
-        if isNewUser {
-            // Do nothing, user goes through onboarding
-        } else {
-            // Push into tabbar view
-            root.updateViewState(showTabBarView: true)
-        }
-    }
-    
-    private func onSignInPresssed() {
-        showSignInView = true
-        logManager.trackEvent(event: Event.signInPressed)
     }
     
     private var policyLinks: some View {
@@ -139,5 +93,5 @@ struct WelcomeView: View {
 }
 
 #Preview {
-    WelcomeView()
+    WelcomeView(viewModel: WelcomeViewModel(interactor: CoreInteractor(container: DevPreview.shared.container)))
 }

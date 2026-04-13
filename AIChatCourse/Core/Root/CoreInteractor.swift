@@ -53,11 +53,6 @@ struct CoreInteractor {
     func signInApple() async throws -> (user: UserAuthInfo, isNewUser: Bool) {
         try await authManager.signInApple()
     }
-    
-    func deleteAccount() async throws {
-        try await authManager.deleteAccount()
-
-    }
         
     // MARK: UserManager
     
@@ -71,10 +66,6 @@ struct CoreInteractor {
     
     func markOnboardingCompleteForCurrentUser(profileColorHex: String) async throws {
         try await userManager.markOnboardingCompleteForCurrentUser(profileColorHex: profileColorHex)
-    }
-    
-    func deleteCurrentUser() async throws {
-        try await userManager.deleteCurrentUser()
     }
     
     // MARK: AIManager
@@ -125,10 +116,6 @@ struct CoreInteractor {
         try await avatarManager.removeAuthorIdFromAvatar(avatarId: avatarId)
     }
     
-    func removeAuthorIdFromAllAvatars(userId: String) async throws {
-        try await avatarManager.removeAuthorIdFromAllAvatars(userId: userId)
-    }
-    
     // MARK: ChatManager
     
     func createNewChat(chat: ChatModel) async throws {
@@ -161,9 +148,6 @@ struct CoreInteractor {
     
     func deleteChat(chatId: String) async throws {
         try await chatManager.deleteChat(chatId: chatId)
-    }
-    func deleteAllChatsForUser(userId: String) async throws {
-        try await chatManager.deleteAllChatsForUser(userId: userId)
     }
     
     func reportChat(chatId: String, userId: String) async throws {
@@ -219,6 +203,16 @@ struct CoreInteractor {
     func signOut() async throws {
         try authManager.signOut()
         userManager.signOut()
+    }
+    
+    func deleteAccount() async throws {
+        let uid = try authManager.getAuthId()
+        
+        try await authManager.deleteAccount()
+        try await userManager.deleteCurrentUser()
+        try await avatarManager.removeAuthorIdFromAllAvatars(userId: uid)
+        try await chatManager.deleteAllChatsForUser(userId: uid)
+        logManager.deleteUserProfile()
     }
     
 }

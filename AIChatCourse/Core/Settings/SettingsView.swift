@@ -5,24 +5,13 @@
 //
 
 import SwiftUI
-import SwiftfulUtilities
 
 struct SettingsView: View {
     
+    @State var viewModel: SettingsViewModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(AuthManager.self) private var authManager
-    @Environment(UserManager.self) private var userManager
-    @Environment(AvatarManager.self) private var avatarManager
-    @Environment(ChatManager.self) private var chatManager
-    @Environment(AppState.self) private var appState
-    @Environment(LogManager.self) private var logManager
     @Environment(DependencyContainer.self) private var container
-
-    @State private var isPremium: Bool = false
-    @State private var isAnonymousUser: Bool = false
-    @State private var showCreateAccountView: Bool = false
-    @State private var showAlert: AnyAppAlert?
-    @State private var showRatingsModal: Bool = false
+    @Environment(AppState.self) private var appState
 
     var body: some View {
         NavigationStack {
@@ -32,21 +21,27 @@ struct SettingsView: View {
                 applicationSection
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $showCreateAccountView, onDismiss: {
-                setAnonymousAccountStatus()
+            .sheet(isPresented: $viewModel.showCreateAccountView, onDismiss: {
+                viewModel.setAnonymousAccountStatus()
             }, content: {
                 CreateAccountView(viewModel: CreateAccountViewModel(interactor: CoreInteractor(container: container)))
                     .presentationDetents([.medium])
             })
             .onAppear {
-                setAnonymousAccountStatus()
+                viewModel.setAnonymousAccountStatus()
             }
-            .showCustomAlert(alert: $showAlert)
+            .showCustomAlert(alert: $viewModel.showAlert)
             .screenAppearAnalytics(name: "SettingsView")
-            .showModal(showModal: $showRatingsModal) {
+            .showModal(showModal: $viewModel.showRatingsModal) {
                 ratingsModal
             }
         }
+    }
+    
+    func dismissScreen() async {
+        dismiss()
+        try? await Task.sleep(for: .seconds(1))
+        appState.updateViewState(showTabBarView: false)
     }
     
     private var ratingsModal: some View {
@@ -55,29 +50,31 @@ struct SettingsView: View {
             subtitle: "We'd love to hear your feedback!",
             primaryButtonTitle: "Yes",
             primaryButtonAction: {
-                onEnjoyingAppYesPressed()
+                viewModel.onEnjoyingAppYesPressed()
             },
             secondaryButtonTitle: "No",
             secondaryButtonAction: {
-                onEnjoyingAppNoPressed()
+                viewModel.onEnjoyingAppNoPressed()
             }
         )
     }
     
     private var accountSection: some View {
         Section {
-            if isAnonymousUser {
+            if viewModel.isAnonymousUser {
                 Text("Save & back-up account")
                     .rowFormatting()
                     .anyButton(.highlight) {
-                        onCreateAccountPressed()
+                        viewModel.onCreateAccountPressed()
                     }
                     .removeListRowFormatting()
             } else {
                 Text("Sign out")
                     .rowFormatting()
                     .anyButton(.highlight) {
-                        onSignOutPressed()
+                        viewModel.onSignOutPressed(onDismiss: {
+                            await dismissScreen()
+                        })
                     }
                     .removeListRowFormatting()
             }
@@ -86,7 +83,9 @@ struct SettingsView: View {
                 .foregroundStyle(.red)
                 .rowFormatting()
                 .anyButton(.highlight) {
-                    onDeleteAccountPressed()
+                    viewModel.onDeleteAccountPressed(onDismiss: {
+                        await dismissScreen()
+                    })
                 }
                 .removeListRowFormatting()
         } header: {
@@ -97,9 +96,9 @@ struct SettingsView: View {
     private var purchaseSection: some View {
         Section {
             HStack(spacing: 8) {
-                Text("Account status: \(isPremium ? "PREMIUM" : "FREE")")
+                Text("Account status: \(viewModel.isPremium ? "PREMIUM" : "FREE")")
                 Spacer(minLength: 0)
-                if isPremium {
+                if viewModel.isPremium {
                     Text("MANAGE")
                         .badgeButton()
                 }
@@ -108,7 +107,7 @@ struct SettingsView: View {
             .anyButton(.highlight) {
 
             }
-            .disabled(!isPremium)
+            .disabled(!viewModel.isPremium)
             .removeListRowFormatting()
         } header: {
             Text("Purchases")
@@ -121,7 +120,7 @@ struct SettingsView: View {
                 .foregroundStyle(.blue)
                 .rowFormatting()
                 .anyButton(.highlight, action: {
-                    onRatingsButtonPressed()
+                    viewModel.onRatingsButtonPressed()
                 })
                 .removeListRowFormatting()
             
@@ -147,7 +146,7 @@ struct SettingsView: View {
                 .foregroundStyle(.blue)
                 .rowFormatting()
                 .anyButton(.highlight, action: {
-                    onContactUsPressed()
+                    viewModel.onContactUsPressed()
                 })
                 .removeListRowFormatting()
         } header: {
@@ -156,158 +155,6 @@ struct SettingsView: View {
             Text("Created by Swiftful Thinking.\nLearn more at www.swiftful-thinking.com.")
                 .baselineOffset(6)
         }
-    }
-    
-    func setAnonymousAccountStatus() {
-        isAnonymousUser = authManager.auth?.isAnonymous == true
-    }
-    
-    enum Event: LoggableEvent {
-        case signOutStart
-        case signOutSuccess
-        case signOutFail(error: Error)
-        case deleteAccountStart
-        case deleteAccountStartConfirm
-        case deleteAccountSuccess
-        case deleteAccountFail(error: Error)
-        case createAccountPressed
-        case contactUsPressed
-        case ratingsPressed
-        case ratingsYesPressed
-        case ratingsNoPressed
-
-        var eventName: String {
-            switch self {
-            case .signOutStart:                 return "SettingsView_SignOut_Start"
-            case .signOutSuccess:               return "SettingsView_SignOut_Success"
-            case .signOutFail:                  return "SettingsView_SignOut_Fail"
-            case .deleteAccountStart:           return "SettingsView_DeleteAccount_Start"
-            case .deleteAccountStartConfirm:    return "SettingsView_DeleteAccount_StartConfirm"
-            case .deleteAccountSuccess:         return "SettingsView_DeleteAccount_Success"
-            case .deleteAccountFail:            return "SettingsView_DeleteAccount_Fail"
-            case .createAccountPressed:         return "SettingsView_CreateAccount_Pressed"
-            case .contactUsPressed:             return "SettingsView_ContactUs_Pressed"
-            case .ratingsPressed:               return "SettingsView_Ratings_Pressed"
-            case .ratingsYesPressed:            return "SettingsView_RatingsYes_Pressed"
-            case .ratingsNoPressed:             return "SettingsView_RatingsNo_Pressed"
-            }
-        }
-        
-        var parameters: [String: Any]? {
-            switch self {
-            case .signOutFail(error: let error), .deleteAccountFail(error: let error):
-                return error.eventParameters
-            default:
-                return nil
-            }
-        }
-        
-        var type: LogType {
-            switch self {
-            case .signOutFail, .deleteAccountFail:
-                return .severe
-            default:
-                return .analytic
-            }
-        }
-    }
-    
-    private func onRatingsButtonPressed() {
-        logManager.trackEvent(event: Event.ratingsPressed)
-        showRatingsModal = true
-    }
-    
-    private func onEnjoyingAppYesPressed() {
-        logManager.trackEvent(event: Event.ratingsYesPressed)
-        showRatingsModal = false
-        AppStoreRatingsHelper.requestRatingsReview()
-    }
-    
-    private func onEnjoyingAppNoPressed() {
-        logManager.trackEvent(event: Event.ratingsNoPressed)
-        showRatingsModal = false
-    }
-    
-    private func onContactUsPressed() {
-        logManager.trackEvent(event: Event.contactUsPressed)
-        let email = "hello@swiftful-thinking.com"
-        let emailString = "mailto:\(email)"
-        
-        guard let url = URL(string: emailString), UIApplication.shared.canOpenURL(url) else {
-            return
-        }
-        
-        UIApplication.shared.open(url)
-    }
-    
-    func onSignOutPressed() {
-        logManager.trackEvent(event: Event.signOutStart)
-        
-        Task {
-            do {
-                try authManager.signOut()
-                userManager.signOut()
-                logManager.trackEvent(event: Event.signOutSuccess)
-
-                await dismissScreen()
-            } catch {
-                showAlert = AnyAppAlert(error: error)
-                logManager.trackEvent(event: Event.signOutFail(error: error))
-            }
-        }
-    }
-    
-    private func dismissScreen() async {
-        dismiss()
-        try? await Task.sleep(for: .seconds(1))
-        appState.updateViewState(showTabBarView: false)
-    }
-    
-    func onDeleteAccountPressed() {
-        logManager.trackEvent(event: Event.deleteAccountStart)
-
-        showAlert = AnyAppAlert(
-            title: "Delete Account?",
-            subtitle: "This action is permanent and cannot be undone. Your data will be deleted from our server forever.",
-            buttons: {
-                AnyView(
-                    Button("Delete", role: .destructive, action: {
-                        onDeleteAccountConfirmed()
-                    })
-                )
-            }
-        )
-    }
-    
-    private func onDeleteAccountConfirmed() {
-        logManager.trackEvent(event: Event.deleteAccountStartConfirm)
-
-        Task {
-            do {
-                let uid = try authManager.getAuthId()
-                
-                try await authManager.deleteAccount()
-                
-                try await userManager.deleteCurrentUser()
-                
-                try await avatarManager.removeAuthorIdFromAllAvatars(userId: uid)
-                
-                try await chatManager.deleteAllChatsForUser(userId: uid)
-                
-                logManager.deleteUserProfile()
-                logManager.trackEvent(event: Event.deleteAccountSuccess)
-
-                await dismissScreen()
-            } catch {
-                showAlert = AnyAppAlert(error: error)
-                logManager.trackEvent(event: Event.deleteAccountFail(error: error))
-            }
-        }
-    }
-    
-    func onCreateAccountPressed() {
-        showCreateAccountView = true
-        logManager.trackEvent(event: Event.createAccountPressed)
     }
 }
 
@@ -322,20 +169,27 @@ fileprivate extension View {
 }
 
 #Preview("No auth") {
-    SettingsView()
-        .environment(AuthManager(service: MockAuthService(user: nil)))
-        .environment(UserManager(services: MockUserServices(user: nil)))
+    
+    let container = DevPreview.shared.container
+    container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: nil)))
+    container.register(UserManager.self, service: UserManager(services: MockUserServices(user: nil)))
+    
+    return SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
         .previewEnvironment()
 }
 #Preview("Anonymous") {
-    SettingsView()
-        .environment(AuthManager(service: MockAuthService(user: UserAuthInfo.mock(isAnonymous: true))))
-        .environment(UserManager(services: MockUserServices(user: .mock)))
+    let container = DevPreview.shared.container
+    container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: UserAuthInfo.mock(isAnonymous: true))))
+    container.register(UserManager.self, service: UserManager(services: MockUserServices(user: .mock)))
+    
+    return SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
         .previewEnvironment()
 }
 #Preview("Not anonymous") {
-    SettingsView()
-        .environment(AuthManager(service: MockAuthService(user: UserAuthInfo.mock(isAnonymous: false))))
-        .environment(UserManager(services: MockUserServices(user: .mock)))
+    let container = DevPreview.shared.container
+    container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: UserAuthInfo.mock(isAnonymous: false))))
+    container.register(UserManager.self, service: UserManager(services: MockUserServices(user: .mock)))
+    
+    return SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
         .previewEnvironment()
 }
