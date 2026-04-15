@@ -36,7 +36,7 @@ struct AIChatCourseApp: App {
 struct TestingApp: App {
     var body: some Scene {
         WindowGroup {
-            Text("Testing")
+            Text("Testing.")
         }
     }
 }
