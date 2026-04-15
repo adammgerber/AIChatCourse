@@ -11,6 +11,7 @@ import SwiftUI
 protocol AppViewInteractor {
     func trackEvent(event: LoggableEvent)
     var auth: UserAuthInfo? { get }
+    var showTabBar: Bool { get }
     func logIn(auth: UserAuthInfo, isNewUser: Bool) async throws
     func signInAnonymously() async throws -> (user: UserAuthInfo, isNewUser: Bool)
 }
@@ -22,6 +23,9 @@ extension CoreInteractor: AppViewInteractor {}
 class AppViewModel {
     
     private let interactor: AppViewInteractor
+    var showTabBar: Bool {
+        interactor.showTabBar
+    }
     
     init(interactor: AppViewInteractor) {
         self.interactor = interactor
@@ -30,7 +34,7 @@ class AppViewModel {
     func showATTPromptIfNeeded() async {
         #if !DEBUG
         let status = await AppTrackingTransparencyHelper.requestTrackingAuthorization()
-        logManager.trackEvent(event: Event.attStatus(dict: status.eventParameters))
+        interactor.trackEvent(event: Event.attStatus(dict: status.eventParameters))
         #endif
     }
     

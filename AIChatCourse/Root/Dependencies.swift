@@ -1,115 +1,10 @@
 //
-//  AIChatCourseApp.swift
+//  Dependencies.swift
 //  AIChatCourse
 //
-//  Created by Adam Gerber on 09/09/2025.
+//  Created by Adam Gerber on 13/04/2026.
 //
-
 import SwiftUI
-import Firebase
-import SwiftfulUtilities
-
-@main
-struct AppEntryPoint {
-    static func main() {
-        if Utilities.isUnitTesting {
-            TestingApp.main()
-        } else {
-            AIChatCourseApp.main()
-        }
-    }
-}
-
-struct TestingApp: App {
-    var body: some Scene {
-        WindowGroup {
-            Text("Testing")
-        }
-    }
-}
-
-struct AIChatCourseApp: App {
-    
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    
-    var body: some Scene {
-        WindowGroup {
-            AppView(viewModel: AppViewModel(interactor: CoreInteractor(container: delegate.dependencies.container)))
-                .environment(delegate.dependencies.container)
-                .environment(delegate.dependencies.pushManager)
-                .environment(delegate.dependencies.chatManager)
-                .environment(delegate.dependencies.aiManager)
-                .environment(delegate.dependencies.avatarManager)
-                .environment(delegate.dependencies.userManager)
-                .environment(delegate.dependencies.authManager)
-                .environment(delegate.dependencies.logManager)
-        }
-    }
-}
-
-class AppDelegate: NSObject, UIApplicationDelegate {
-    
-    var dependencies: Dependencies!
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        
-        let config: BuildConfiguration
-        
-        #if MOCK
-        config = .mock(isSignedIn: true)
-        #elseif DEV
-        config = .dev
-        #else
-        config = .prod
-        #endif
-      
-        config.configure()
-        dependencies = Dependencies(config: config)
-        return true
-    }
-}
-
-enum BuildConfiguration {
-    case mock(isSignedIn: Bool), dev, prod
-    
-    func configure() {
-        switch self {
-            
-        case .mock:
-            // does not run firebase
-            break
-        case .dev:
-            let plist = Bundle.main.path(forResource: "GoogleService-Info-Dev", ofType: "plist")!
-            let options = FirebaseOptions(contentsOfFile: plist)!
-            FirebaseApp.configure(options: options)
-        case .prod:
-            let plist = Bundle.main.path(forResource: "GoogleService-Info-Prod", ofType: "plist")!
-            let options = FirebaseOptions(contentsOfFile: plist)!
-            FirebaseApp.configure(options: options)
-        }
-    }
-}
-
-@Observable
-@MainActor
-class DependencyContainer {
-    private var services: [String: Any] = [:]
-    
-    func register<T>(_ type: T.Type, service: T) {
-        let key = "\(type)"
-        services[key] = service
-    }
-    
-    func register<T>(_ type: T.Type, service: () -> T) {
-        let key = "\(type)"
-        services[key] = service()
-    }
-    
-    func resolve<T>(_ type: T.Type) -> T? {
-        let key = "\(type)"
-        return services[key] as? T
-    }
-}
 
 @MainActor
 struct Dependencies {
@@ -182,14 +77,8 @@ extension View {
     func previewEnvironment(isSignedIn: Bool = true) -> some View {
         self
             .environment(DevPreview.shared.container)
-            .environment(ChatManager(service: MockChatService()))
-            .environment(AIManager(service: MockAIService()))
-            .environment(AvatarManager(service: MockAvatarService()))
-            .environment(UserManager(services: MockUserServices(user: isSignedIn ? .mock : nil)))
-            .environment(AuthManager(service: MockAuthService(user: isSignedIn ? .mock() : nil)))
-            .environment(AppState())
             .environment(LogManager(services: []))
-            .environment(PushManager())
+            .environment(CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container)))
     }
 }
 
@@ -206,6 +95,7 @@ class DevPreview {
         container.register(ChatManager.self, service: chatManager)
         container.register(LogManager.self, service: logManager)
         container.register(PushManager.self, service: pushManager)
+        container.register(AppState.self, service: appState)
         return container
     }
     
@@ -216,6 +106,7 @@ class DevPreview {
     let chatManager: ChatManager
     let logManager: LogManager
     let pushManager: PushManager
+    let appState: AppState
     
     init(isSignedIn: Bool = true) {
         self.authManager = AuthManager(service: MockAuthService(user: isSignedIn ? .mock() : nil))
@@ -225,6 +116,6 @@ class DevPreview {
         self.chatManager = ChatManager(service: FirebaseChatService())
         self.logManager = LogManager(services: [])
         self.pushManager = PushManager()
-
+        self.appState = AppState()
     }
 }

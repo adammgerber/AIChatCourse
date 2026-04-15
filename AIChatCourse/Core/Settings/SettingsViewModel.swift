@@ -16,6 +16,7 @@ protocol SettingsInteractor {
     func deleteUserProfile()
     func deleteAccount() async throws
     func signOut() async throws
+    func updateAppState(showTabBarView: Bool)
 }
 
 extension CoreInteractor: SettingsInteractor {}
@@ -74,6 +75,7 @@ class SettingsViewModel {
                 interactor.trackEvent(event: Event.signOutSuccess)
 
                 await onDismiss()
+                interactor.updateAppState(showTabBarView: false)
             } catch {
                 showAlert = AnyAppAlert(error: error)
                 interactor.trackEvent(event: Event.signOutFail(error: error))
@@ -106,6 +108,7 @@ class SettingsViewModel {
                 interactor.trackEvent(event: Event.deleteAccountSuccess)
 
                 await onDismiss()
+                interactor.updateAppState(showTabBarView: false)
             } catch {
                 showAlert = AnyAppAlert(error: error)
                 interactor.trackEvent(event: Event.deleteAccountFail(error: error))

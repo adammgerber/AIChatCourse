@@ -11,7 +11,7 @@ struct SettingsView: View {
     @State var viewModel: SettingsViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(DependencyContainer.self) private var container
-    @Environment(AppState.self) private var appState
+    @Environment(CoreBuilder.self) private var builder
 
     var body: some View {
         NavigationStack {
@@ -24,7 +24,7 @@ struct SettingsView: View {
             .sheet(isPresented: $viewModel.showCreateAccountView, onDismiss: {
                 viewModel.setAnonymousAccountStatus()
             }, content: {
-                CreateAccountView(viewModel: CreateAccountViewModel(interactor: CoreInteractor(container: container)))
+                builder.createAccountView()
                     .presentationDetents([.medium])
             })
             .onAppear {
@@ -41,7 +41,6 @@ struct SettingsView: View {
     func dismissScreen() async {
         dismiss()
         try? await Task.sleep(for: .seconds(1))
-        appState.updateViewState(showTabBarView: false)
     }
     
     private var ratingsModal: some View {

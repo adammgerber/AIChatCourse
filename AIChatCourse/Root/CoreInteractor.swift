@@ -36,6 +36,10 @@ struct CoreInteractor {
         appState.showTabBar
     }
     
+    func updateAppState(showTabBarView: Bool) {
+        appState.updateViewState(showTabBarView: showTabBarView)
+    }
+    
     // MARK: AuthManager
     
     var auth: UserAuthInfo? {
