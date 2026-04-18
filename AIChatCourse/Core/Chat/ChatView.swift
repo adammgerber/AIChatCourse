@@ -4,13 +4,18 @@
 //
 import SwiftUI
 
-struct ChatView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State var viewModel: ChatViewModel
-    
+struct ChatViewDelegate {
     var chat: ChatModel?
     var avatarId: String = AvatarModel.mock.avatarId
+}
 
+struct ChatView: View {
+    
+    @State var viewModel: ChatViewModel
+    @Environment(\.dismiss) private var dismiss
+    @Environment(CoreBuilder.self) private var builder
+    let delegate: ChatViewDelegate
+    
     var body: some View {
         VStack(spacing: 0) {
             scrollViewSection
@@ -45,14 +50,14 @@ struct ChatView: View {
             }
         }
         .task {
-            await viewModel.loadAvatar(avatarId: avatarId)
+            await viewModel.loadAvatar(avatarId: delegate.avatarId)
         }
         .task {
-            await viewModel.loadChat(avatarId: avatarId)
+            await viewModel.loadChat(avatarId: delegate.avatarId)
             await viewModel.listenForChatMessages()
         }
         .onFirstAppear {
-            viewModel.onViewFirstAppear(chat: chat)
+            viewModel.onViewFirstAppear(chat: delegate.chat)
         }
     }
     
@@ -114,7 +119,7 @@ struct ChatView: View {
                     .padding(.trailing, 4)
                     .foregroundStyle(.accent)
                     .anyButton(.plain, action: {
-                        viewModel.onSendMessagePressed(avatarId: avatarId)
+                        viewModel.onSendMessagePressed(avatarId: delegate.avatarId)
                     })
                 
                 , alignment: .trailing
@@ -135,8 +140,10 @@ struct ChatView: View {
 }
 
 #Preview("Working chat") {
-    NavigationStack {
-        ChatView(viewModel: ChatViewModel(interactor: CoreInteractor(container: DevPreview.shared.container)))
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    
+    return NavigationStack {
+        builder.chatView()
     }
 }
 
@@ -144,8 +151,10 @@ struct ChatView: View {
     let container = DevPreview.shared.container
     container.register(AIManager.self, service: AIManager(service: MockAIService(delay: 20)))
     
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    
     return NavigationStack {
-        ChatView(viewModel: ChatViewModel(interactor: CoreInteractor(container: container)))
+        builder.chatView()
             .previewEnvironment()
     }
 }
@@ -154,8 +163,9 @@ struct ChatView: View {
     let container = DevPreview.shared.container
     container.register(AIManager.self, service: AIManager(service: MockAIService(delay: 2, showError: true)))
     
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    
     return NavigationStack {
-        ChatView(viewModel: ChatViewModel(interactor: CoreInteractor(container: container)))
-            .previewEnvironment()
+        builder.chatView()
     }
 }

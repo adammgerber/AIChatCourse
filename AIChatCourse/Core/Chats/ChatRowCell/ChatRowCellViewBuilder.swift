@@ -7,10 +7,14 @@
 
 import SwiftUI
 
+struct ChatRowCellDelegate {
+    var chat: ChatModel = .mock
+}
+
 struct ChatRowCellViewBuilder: View {
     
     @State var viewModel: ChatRowCellViewModel
-    var chat: ChatModel = .mock
+    let delegate: ChatRowCellDelegate
     
     var body: some View {
         ChatRowCellView(
@@ -21,24 +25,21 @@ struct ChatRowCellViewBuilder: View {
         )
         .redacted(reason: viewModel.isLoading ? .placeholder : [])
         .task {
-            await viewModel.loadAvatar(chat: chat)
+            await viewModel.loadAvatar(chat: delegate.chat)
         }
         .task {
-            await viewModel.loadLastChatMessage(chat: chat)
+            await viewModel.loadLastChatMessage(chat: delegate.chat)
         }
     }
 }
 
 #Preview {
-    VStack {
-        ChatRowCellViewBuilder(
-            viewModel: ChatRowCellViewModel(
-                interactor: CoreInteractor(
-                    container: DevPreview.shared.container
-                )
-            ),
-            chat: .mock
-        )
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    
+    return VStack {
+        builder.chatRowCell()
+        
+        
 //        ChatRowCellViewBuilder(chat: .mock, getAvatar: {
 //            try? await Task.sleep(for: .seconds(5))
 //            return .mock
@@ -46,6 +47,7 @@ struct ChatRowCellViewBuilder: View {
 //            try? await Task.sleep(for: .seconds(5))
 //            return .mock
 //        })
+//        
 //        ChatRowCellViewBuilder(chat: .mock, getAvatar: {
 //            .mock
 //        }, getLastChatMessage: {

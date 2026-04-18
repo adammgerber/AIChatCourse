@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ProfileView: View {
     
-    @Environment(DependencyContainer.self) private var container
+    @Environment(CoreBuilder.self) private var builder
     @State var viewModel: ProfileViewModel
     
     var body: some View {
@@ -19,7 +19,7 @@ struct ProfileView: View {
                 myAvatarsSection
             }
             .navigationTitle("Profile")
-            .navigationDestinationForCoreModule(path: $viewModel.path)
+            .navigationDestinationForTabbarModule(path: $viewModel.path)
             .showCustomAlert(alert: $viewModel.showAlert)
             .screenAppearAnalytics(name: "ProfileView")
             .toolbar {
@@ -29,7 +29,7 @@ struct ProfileView: View {
             }
         }
         .sheet(isPresented: $viewModel.showSettingsView) {
-            SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
+            builder.settingsView()
         }
         .fullScreenCover(
             isPresented: $viewModel.showCreateAvatarView,
@@ -39,7 +39,7 @@ struct ProfileView: View {
                 }
             },
             content: {
-                CreateAvatarView(viewModel: CreateAvatarViewModel(interactor: CoreInteractor(container: container)))
+                builder.createAvatarView()
             })
         .task {
             await viewModel.loadData()
@@ -117,8 +117,8 @@ struct ProfileView: View {
 }
 
 #Preview {
-    ProfileView(
-        viewModel: ProfileViewModel(interactor: CoreInteractor(container: DevPreview.shared.container))
-    )
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    
+    return builder.profileView()
     .previewEnvironment()
 }

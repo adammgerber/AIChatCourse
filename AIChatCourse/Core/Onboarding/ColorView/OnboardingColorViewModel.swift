@@ -31,4 +31,9 @@ class OnboardingColorViewModel {
         selectedColor = color
     }
     
+    func onContinuePressed(path: Binding<[OnboardingPathOption]>) {
+        guard let selectedColor else { return }
+        path.wrappedValue.append(.completedView(selectedColor: selectedColor))
+    }
+    
 }

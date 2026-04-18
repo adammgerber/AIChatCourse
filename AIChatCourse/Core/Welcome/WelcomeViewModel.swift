@@ -22,6 +22,7 @@ class WelcomeViewModel {
     
     private(set) var imageName: String = Constants.randomImage
     var showSignInView: Bool = false
+    var path: [OnboardingPathOption] = []
     
     private let interactor: WelcomeViewInteractor
     
@@ -43,6 +44,10 @@ class WelcomeViewModel {
     func onSignInPresssed() {
         showSignInView = true
         interactor.trackEvent(event: Event.signInPressed)
+    }
+    
+    func onGetStartedPressed() {
+        path.append(.introView)
     }
     
     enum Event: LoggableEvent {

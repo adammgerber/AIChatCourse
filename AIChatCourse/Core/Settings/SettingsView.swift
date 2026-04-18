@@ -10,7 +10,6 @@ struct SettingsView: View {
     
     @State var viewModel: SettingsViewModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(DependencyContainer.self) private var container
     @Environment(CoreBuilder.self) private var builder
 
     var body: some View {
@@ -173,22 +172,25 @@ fileprivate extension View {
     container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: nil)))
     container.register(UserManager.self, service: UserManager(services: MockUserServices(user: nil)))
     
-    return SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
-        .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    
+    return builder.settingsView().previewEnvironment()
 }
 #Preview("Anonymous") {
     let container = DevPreview.shared.container
     container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: UserAuthInfo.mock(isAnonymous: true))))
     container.register(UserManager.self, service: UserManager(services: MockUserServices(user: .mock)))
     
-    return SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
-        .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    
+    return builder.settingsView().previewEnvironment()
 }
 #Preview("Not anonymous") {
     let container = DevPreview.shared.container
     container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: UserAuthInfo.mock(isAnonymous: false))))
     container.register(UserManager.self, service: UserManager(services: MockUserServices(user: .mock)))
     
-    return SettingsView(viewModel: SettingsViewModel(interactor: CoreInteractor(container: container)))
-        .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    
+    return builder.settingsView().previewEnvironment()
 }

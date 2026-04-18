@@ -135,10 +135,7 @@ struct CreateAvatarView: View {
 }
 
 #Preview {
-    CreateAvatarView(
-        viewModel: CreateAvatarViewModel(
-            interactor: CoreInteractor(container: DevPreview.shared.container)
-        )
-    )
-    .previewEnvironment()
+    CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+        .createAccountView()
+        .previewEnvironment()
 }

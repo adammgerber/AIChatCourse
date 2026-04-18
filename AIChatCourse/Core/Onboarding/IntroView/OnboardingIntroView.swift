@@ -7,8 +7,15 @@
 
 import SwiftUI
 
+struct OnboardingIntroDelegate {
+    var path: Binding<[OnboardingPathOption]>
+}
+
 struct OnboardingIntroView: View {
-    @Environment(DependencyContainer.self) private var container
+    @Environment(CoreBuilder.self) private var builder
+    @State var viewModel: OnboardingIntroViewModel
+    var delegate: OnboardingIntroDelegate
+    
     var body: some View {
         VStack {
             Group {
@@ -30,12 +37,11 @@ struct OnboardingIntroView: View {
             .frame(maxHeight: .infinity)
             .padding(24)
 
-            NavigationLink {
-                OnboardingColorView(viewModel: OnboardingColorViewModel(interactor: CoreInteractor(container: container)))
-            } label: {
-                Text("Continue")
-                    .callToActionButton()
-            }
+            Text("Continue")
+                .callToActionButton()
+                .anyButton(.press) {
+                    viewModel.onContinueButtonPressed(path: delegate.path)
+                }
         }
         .padding(24)
         .font(.title3)
@@ -44,8 +50,12 @@ struct OnboardingIntroView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        OnboardingIntroView()
+#Preview("Original") {
+    let container = DevPreview.shared.container
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    
+    return NavigationStack {
+        builder.onboardingIntroView(delegate: OnboardingIntroDelegate(path: .constant([])))
     }
+    .previewEnvironment()
 }

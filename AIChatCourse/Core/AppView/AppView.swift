@@ -9,7 +9,7 @@ import SwiftfulUtilities
 
 struct AppView: View {
     @State var viewModel: AppViewModel
-    @Environment(DependencyContainer.self) private var container
+    @Environment(CoreBuilder.self) private var builder
 
     var body: some View {
         RootView(
@@ -30,10 +30,10 @@ struct AppView: View {
                 AppViewBuilder(
                     showTabBar: viewModel.showTabBar,
                     tabbarView: {
-                        TabBarView()
+                        builder.tabBarView()
                     },
                     onboardingView: {
-                        WelcomeView(viewModel: WelcomeViewModel(interactor: CoreInteractor(container: container)))
+                        builder.welcomeView()
                     }
                 )
                 .task {
@@ -58,19 +58,18 @@ struct AppView: View {
 #Preview("AppView - Tabbar") {
     let container = DevPreview.shared.container
     container.register(AppState.self, service: AppState(showTabBar: true))
-    return AppView(
-        viewModel: AppViewModel(interactor: CoreInteractor(container: container))
-    )
-    .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    return builder.appView()
+        .previewEnvironment()
 }
+
 #Preview("AppView - Onboarding") {
     let container = DevPreview.shared.container
     container.register(UserManager.self, service: UserManager(services: MockUserServices(user: nil)))
     container.register(AuthManager.self, service: AuthManager(service: MockAuthService(user: nil)))
     container.register(AppState.self, service: AppState(showTabBar: true))
      
-    return AppView(
-        viewModel: AppViewModel(interactor: CoreInteractor(container: container))
-    )
-    .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    return builder.appView()
+        .previewEnvironment()
 }

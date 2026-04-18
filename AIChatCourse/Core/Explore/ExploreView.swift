@@ -53,7 +53,7 @@ struct ExploreView: View {
 //            .sheet(isPresented: $viewModel.showDevSettings, content: {
 //                DevSettingsView()
 //            })
-            .navigationDestinationForCoreModule(path: $viewModel.path)
+            .navigationDestinationForTabbarModule(path: $viewModel.path)
             .task {
                 await viewModel.loadFeaturedAvatars()
             }

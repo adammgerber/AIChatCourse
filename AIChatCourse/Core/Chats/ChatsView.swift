@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ChatsView: View {
-    @Environment(DependencyContainer.self) private var container
+    @Environment(CoreBuilder.self) private var builder
     @State var viewModel: ChatsViewModel
   
     var body: some View {
@@ -21,7 +21,7 @@ struct ChatsView: View {
                 chatsSection
             }
             .navigationTitle("chats")
-            .navigationDestinationForCoreModule(path: $viewModel.path)
+            .navigationDestinationForTabbarModule(path: $viewModel.path)
             .screenAppearAnalytics(name: "ChatsView")
             .onAppear {
                 viewModel.loadRecentAvatars()
@@ -80,11 +80,11 @@ struct ChatsView: View {
                     .removeListRowFormatting()
             } else {
                 ForEach(viewModel.chats) { chat in
-                    ChatRowCellViewBuilder(viewModel: ChatRowCellViewModel(interactor: CoreInteractor(container: container)), chat: chat)
-                    .anyButton(.highlight) {
-                        viewModel.onChatPressed(chat: chat)
-                    }
-                    .removeListRowFormatting()
+                    builder.chatRowCell(delegate: ChatRowCellDelegate(chat: chat))
+                        .anyButton(.highlight) {
+                            viewModel.onChatPressed(chat: chat)
+                        }
+                        .removeListRowFormatting()
                 }
             }
         } header: {
@@ -94,8 +94,8 @@ struct ChatsView: View {
 }
 
 #Preview("Has data") {
-    ChatsView(viewModel: ChatsViewModel(interactor: CoreInteractor(container: DevPreview.shared.container)))
-        .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    return builder.chatsView()
 }
 
 #Preview("No data") {
@@ -107,13 +107,13 @@ struct ChatsView: View {
         )
     }
     container.register(ChatManager.self, service: ChatManager(service: MockChatService(chats: [])))
-    return ChatsView(viewModel: ChatsViewModel(interactor: CoreInteractor(container: container)))
-        .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    return builder.chatsView()
 }
 
 #Preview("Slow loading chats") {
     let container = DevPreview.shared.container
     container.register(ChatManager.self, service: ChatManager(service: MockChatService(delay: 5)))
-    return ChatsView(viewModel: ChatsViewModel(interactor: CoreInteractor(container: container)))
-        .previewEnvironment()
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    return builder.chatsView()
 }

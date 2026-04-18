@@ -7,10 +7,15 @@
 
 import SwiftUI
 
+struct OnboardingColorDelegate {
+    var path: Binding<[OnboardingPathOption]>
+}
+
 struct OnboardingColorView: View {
     
     @State var viewModel: OnboardingColorViewModel
-    @Environment(DependencyContainer.self) private var container
+    @Environment(CoreBuilder.self) private var builder
+    let delegate: OnboardingColorDelegate
     
     var body: some View {
         ScrollView {
@@ -62,18 +67,18 @@ struct OnboardingColorView: View {
     }
     
     private func ctaButton(selectedColor: Color) -> some View {
-        NavigationLink {
-            OnboardingCompletedView(viewModel: OnboardingCompleteViewModel(interactor: CoreInteractor(container: container)), selectedColor: selectedColor)
-        } label: {
-            Text("Continue")
-                .callToActionButton()
-        }
+        Text("Continue")
+            .callToActionButton()
+            .anyButton(.press, action: {
+                viewModel.onContinuePressed(path: delegate.path)
+            })
     }
 }
 
 #Preview {
-    NavigationStack {
-        OnboardingColorView(viewModel: OnboardingColorViewModel(interactor: CoreInteractor(container: DevPreview.shared.container)))
+    let builder = CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+    return NavigationStack {
+        builder.onboardingColorView(delegate: OnboardingColorDelegate(path: .constant([])))
     }
-    .environment(AppState())
+    .previewEnvironment()
 }

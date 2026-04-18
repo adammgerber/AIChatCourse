@@ -34,7 +34,7 @@ class ExploreViewModel {
     
     var showDevSettings: Bool = false
     var showPushNotificationModal: Bool = false
-    var path: [NavigationPathOption] = []
+    var path: [TabbarPathOption] = []
 
     var showDevSettingsButton: Bool {
         #if DEV || MOCK

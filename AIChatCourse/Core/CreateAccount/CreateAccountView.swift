@@ -52,5 +52,6 @@ struct CreateAccountView: View {
 }
 
 #Preview {
-    CreateAccountView(viewModel: CreateAccountViewModel(interactor: CoreInteractor(container: DevPreview.shared.container)))
+    CoreBuilder(interactor: CoreInteractor(container: DevPreview.shared.container))
+        .createAccountView()
 }

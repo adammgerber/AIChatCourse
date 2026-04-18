@@ -7,19 +7,22 @@
 
 import SwiftUI
 
+struct CategoryListDelegate {
+    var path: Binding<[TabbarPathOption]>
+    var category: CharacterOption = .alien
+    var imageName: String = Constants.randomImage
+}
+
 struct CategoryListView: View {
     
     @State var viewModel: CategoryListViewModel
-  
-    @Binding var path: [NavigationPathOption]
-    var category: CharacterOption = .alien
-    var imageName: String = Constants.randomImage
-   
+    let delegate: CategoryListDelegate
+    
     var body: some View {
         List {
             CategoryCellView(
-                title: category.plural.capitalized,
-                imageName: imageName,
+                title: delegate.category.plural.capitalized,
+                imageName: delegate.imageName,
                 font: .largeTitle,
                 cornerRadius: 0
             )
@@ -39,7 +42,7 @@ struct CategoryListView: View {
                         subtitle: avatar.characterDescription
                     )
                     .anyButton(.highlight) {
-                        viewModel.onAvatarPressed(avatar: avatar, path: $path)
+                        viewModel.onAvatarPressed(avatar: avatar, path: delegate.path)
                     }
                     .removeListRowFormatting()
                 }
@@ -50,7 +53,7 @@ struct CategoryListView: View {
         .ignoresSafeArea()
         .listStyle(PlainListStyle())
         .task {
-            await viewModel.loadAvatars(category: category)
+            await viewModel.loadAvatars(category: delegate.category)
         }
     }
 }
@@ -59,8 +62,10 @@ struct CategoryListView: View {
     let container = DevPreview.shared.container
     container.register(AvatarManager.self, service: AvatarManager(service: MockAvatarService()))
     
-    return CategoryListView(viewModel: CategoryListViewModel(interactor: CoreInteractor(container: container)), path: .constant([]))
-        .environment(AvatarManager(service: MockAvatarService()))
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    let delegate = CategoryListDelegate(path: .constant([]))
+    
+    return builder.categoryListView(delegate: delegate)
         .previewEnvironment()
 }
 
@@ -68,8 +73,10 @@ struct CategoryListView: View {
     let container = DevPreview.shared.container
     container.register(AvatarManager.self, service: AvatarManager(service: MockAvatarService(avatars: [])))
     
-    return CategoryListView(viewModel: CategoryListViewModel(interactor: CoreInteractor(container: container)), path: .constant([]))
-        .environment(AvatarManager(service: MockAvatarService()))
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    let delegate = CategoryListDelegate(path: .constant([]))
+    
+    return builder.categoryListView(delegate: delegate)
         .previewEnvironment()
 }
 
@@ -77,8 +84,10 @@ struct CategoryListView: View {
     let container = DevPreview.shared.container
     container.register(AvatarManager.self, service: AvatarManager(service: MockAvatarService(delay: 10)))
     
-    return CategoryListView(viewModel: CategoryListViewModel(interactor: CoreInteractor(container: container)), path: .constant([]))
-        .environment(AvatarManager(service: MockAvatarService()))
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    let delegate = CategoryListDelegate(path: .constant([]))
+    
+    return builder.categoryListView(delegate: delegate)
         .previewEnvironment()
 }
 
@@ -86,8 +95,10 @@ struct CategoryListView: View {
     let container = DevPreview.shared.container
     container.register(AvatarManager.self, service: AvatarManager(service: MockAvatarService(delay: 5, showError: true)))
     
-    return CategoryListView(viewModel: CategoryListViewModel(interactor: CoreInteractor(container: container)), path: .constant([]))
-        .environment(AvatarManager(service: MockAvatarService()))
+    let builder = CoreBuilder(interactor: CoreInteractor(container: container))
+    let delegate = CategoryListDelegate(path: .constant([]))
+    
+    return builder.categoryListView(delegate: delegate)
         .previewEnvironment()
 }
 
